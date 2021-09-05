@@ -9,14 +9,14 @@ use crate::MountOptions;
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
 #[derive(Debug)]
 /// fuse filesystem session, path based.
-pub struct Session {
-    mount_options: MountOptions,
+pub struct Session<'a> {
+    mount_options: &'a MountOptions,
 }
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
-impl Session {
+impl<'a> Session<'a> {
     /// new a fuse filesystem session.
-    pub fn new(mount_options: MountOptions) -> Self {
+    pub fn new(mount_options: &'a MountOptions) -> Self {
         Self { mount_options }
     }
 

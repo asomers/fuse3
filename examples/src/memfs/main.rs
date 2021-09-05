@@ -815,15 +815,15 @@ async fn main() {
     let uid = unsafe { libc::getuid() };
     let gid = unsafe { libc::getgid() };
 
-    let mount_options = MountOptions::default()
+    let mut mount_options = MountOptions::default();
         // .allow_other(true)
-        .fs_name("memfs")
+    mount_options.fs_name("memfs")
         .force_readdir_plus(true)
         .uid(uid)
         .gid(gid);
 
     let mount_path = mount_path.expect("no mount point specified");
-    Session::new(mount_options)
+    Session::new(&mount_options)
         .mount_with_unprivileged(Fs::default(), mount_path)
         .await
         .unwrap();

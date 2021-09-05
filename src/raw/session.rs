@@ -41,18 +41,18 @@ const ROOT_INODE: Inode = 1;
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
 /// fuse filesystem session, inode based.
-pub struct Session<FS> {
+pub struct Session<'a, FS> {
     fuse_connection: Option<Arc<FuseConnection>>,
     filesystem: Option<Arc<FS>>,
     response_sender: UnboundedSender<Vec<u8>>,
     response_receiver: Option<UnboundedReceiver<Vec<u8>>>,
-    mount_options: MountOptions,
+    mount_options: &'a MountOptions,
 }
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
-impl<FS> Session<FS> {
+impl<'a, FS> Session<'a, FS> {
     /// new a fuse filesystem session.
-    pub fn new(mount_options: MountOptions) -> Self {
+    pub fn new(mount_options: &'a MountOptions) -> Self {
         let (sender, receiver) = unbounded();
 
         Self {
@@ -73,7 +73,7 @@ impl<FS> Session<FS> {
 }
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
-impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
+impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
     pub async fn mount_empty_check(&self, mount_path: &Path) -> IoResult<()> {
         #[cfg(all(not(feature = "async-std-runtime"), feature = "tokio-runtime"))]
         if !self.mount_options.nonempty
@@ -142,8 +142,6 @@ impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
     pub async fn mount<P: AsRef<Path>>(mut self, fs: FS, mount_path: P) -> IoResult<()> {
         use nix::mount::MsFlags;
 
-        let mut mount_options = self.mount_options.clone();
-
         let mount_path = mount_path.as_ref();
 
         self.mount_empty_check(mount_path).await?;
@@ -152,9 +150,9 @@ impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
 
         let fd = fuse_connection.as_raw_fd();
 
-        let options = mount_options.build(fd);
+        let options = self.mount_options.build(fd);
 
-        let fs_name = if let Some(fs_name) = mount_options.fs_name.as_ref() {
+        let fs_name = if let Some(fs_name) = self.mount_options.fs_name.as_ref() {
             Some(fs_name.as_str())
         } else {
             Some("fuse")
@@ -190,8 +188,6 @@ impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
         use cstr::cstr;
         use nix::mount::MntFlags;
 
-        let mount_options = self.mount_options.clone();
-
         let mount_path = mount_path.as_ref();
 
         self.mount_empty_check(mount_path).await?;
@@ -200,7 +196,7 @@ impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
 
         let fd = fuse_connection.as_raw_fd();
 
-        let mut nmount = mount_options.build();
+        let mut nmount = self.mount_options.build();
         nmount.str_opt_owned(cstr!("fspath"), mount_path)
             .str_opt_owned(cstr!("fd"), format!("{}", fd).as_str());
         debug!("mount options {:?}", &nmount);

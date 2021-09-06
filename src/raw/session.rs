@@ -2151,20 +2151,7 @@ impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
 
         data = &data[first_null_index + 1..];
 
-        let value = match get_first_null_position(data) {
-            None => {
-                error!(
-                    "fuse_setxattr_in value has no second null unique {}",
-                    request.unique
-                );
-
-                reply_error_in_place(libc::EINVAL.into(), request, &self.response_sender).await;
-
-                return;
-            }
-
-            Some(index) => OsString::from_vec((&data[..index]).to_vec()),
-        };
+        let data = data.to_vec();
 
         let mut resp_sender = self.response_sender.clone();
         let fs = fs.clone();
@@ -2181,7 +2168,7 @@ impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
                     request,
                     in_header.nodeid,
                     &name,
-                    &value,
+                    &data,
                     setxattr_in.flags,
                     0,
                 )

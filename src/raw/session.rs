@@ -1941,7 +1941,7 @@ impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
                 request.unique, in_header.nodeid
             );
 
-            let fs_stat = match fs.statsfs(request, in_header.nodeid).await {
+            let fs_stat = match fs.statfs(request, in_header.nodeid).await {
                 Err(err) => {
                     reply_error_in_place(err, request, resp_sender).await;
 

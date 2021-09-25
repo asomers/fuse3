@@ -285,7 +285,7 @@ pub trait Filesystem {
     /// conforming directory stream operations in case the contents of the directory can change
     /// between `opendir` and [`releasedir`][Filesystem::releasedir].
     async fn opendir(&self, req: Request, inode: Inode, flags: u32) -> Result<ReplyOpen> {
-        Ok(ReplyOpen { fh: 0, flags: 0 })
+        Err(libc::ENOSYS.into())
     }
 
     /// read directory. `offset` is used to track the offset of the directory entries. `fh` will

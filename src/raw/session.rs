@@ -2349,7 +2349,7 @@ impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
 
                     let out_header = fuse_out_header {
                         len: (FUSE_OUT_HEADER_SIZE + FUSE_GETXATTR_OUT_SIZE) as u32,
-                        error: libc::ERANGE,
+                        error: 0,
                         unique: request.unique,
                     };
 

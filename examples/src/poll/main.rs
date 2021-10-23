@@ -368,7 +368,7 @@ async fn main() {
 
     let poll = Poll::default();
 
-    let session = Session::new(&mount_options);
+    let session = Session::new(mount_options);
 
     {
         let mount_path = mount_path.as_os_str().to_os_string();

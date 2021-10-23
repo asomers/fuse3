@@ -41,18 +41,18 @@ const ROOT_INODE: Inode = 1;
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
 /// fuse filesystem session, inode based.
-pub struct Session<'a, FS> {
+pub struct Session<FS> {
     fuse_connection: Option<Arc<FuseConnection>>,
     filesystem: Option<Arc<FS>>,
     response_sender: UnboundedSender<Vec<u8>>,
     response_receiver: Option<UnboundedReceiver<Vec<u8>>>,
-    mount_options: &'a MountOptions,
+    mount_options: MountOptions,
 }
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
-impl<'a, FS> Session<'a, FS> {
+impl<FS> Session<FS> {
     /// new a fuse filesystem session.
-    pub fn new(mount_options: &'a MountOptions) -> Self {
+    pub fn new(mount_options: MountOptions) -> Self {
         let (sender, receiver) = unbounded();
 
         Self {
@@ -73,7 +73,7 @@ impl<'a, FS> Session<'a, FS> {
 }
 
 #[cfg(any(feature = "async-std-runtime", feature = "tokio-runtime"))]
-impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
+impl<FS: Filesystem + Send + Sync + 'static> Session<FS> {
     pub async fn mount_empty_check(&self, mount_path: &Path) -> IoResult<()> {
         #[cfg(all(not(feature = "async-std-runtime"), feature = "tokio-runtime"))]
         if !self.mount_options.nonempty
@@ -193,15 +193,15 @@ impl<'a, FS: Filesystem + Send + Sync + 'static> Session<'a, FS> {
 
         let fd = fuse_connection.as_raw_fd();
 
-        let mut nmount = self.mount_options.build();
-        nmount.str_opt_owned(cstr!("fspath"), mount_path)
-            .str_opt_owned(cstr!("fd"), format!("{}", fd).as_str());
-        debug!("mount options {:?}", &nmount);
-
-        if let Err(err) = nmount.nmount(self.mount_options.flags()) {
-            error!("mount {} failed: {}", mount_path.display(), err);
-
-            return Err(std::io::Error::from(err));
+        {
+            let mut nmount = self.mount_options.build();
+            nmount.str_opt_owned(cstr!("fspath"), mount_path)
+                .str_opt_owned(cstr!("fd"), format!("{}", fd).as_str());
+            debug!("mount options {:?}", &nmount);
+            if let Err(err) = nmount.nmount(self.mount_options.flags()) {
+                error!("mount {} failed: {}", mount_path.display(), err);
+                return Err(std::io::Error::from(err));
+            }
         }
 
         self.fuse_connection.replace(Arc::new(fuse_connection));

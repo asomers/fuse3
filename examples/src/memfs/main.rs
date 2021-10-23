@@ -827,7 +827,7 @@ async fn main() {
         .gid(gid);
 
     let mount_path = mount_path.expect("no mount point specified");
-    Session::new(&mount_options)
+    Session::new(mount_options)
         .mount_with_unprivileged(Fs::default(), mount_path)
         .await
         .unwrap();
